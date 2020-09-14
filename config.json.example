@@ -1,0 +1,4 @@
+{
+	"token": "BOT_TOKEN_HERE",
+	"schedule": "CRON_SCHEDULE"
+}
