@@ -81,6 +81,7 @@ function update_data(callback = null) {
 				await page.waitForSelector('#main-content');
 				const graphEl = await page.$('#main-content');
 				client.covid_graph = await graphEl.screenshot({type: 'png'});
+				await browser.close();
 				console.log('Data fetch complete');
 
 				if (callback)
