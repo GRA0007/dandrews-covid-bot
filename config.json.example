@@ -1,4 +1,12 @@
 {
+	"browser_settings": {
+		"timeout": 0,
+		"executablePath": "/usr/bin/chromium-browser",
+		"args": [
+			"--no-sandbox",
+			"--disable-setuid-sandbox"
+		]
+	},
 	"token": "BOT_TOKEN_HERE",
 	"schedule": "CRON_SCHEDULE"
 }

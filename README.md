@@ -2,6 +2,8 @@
 
 "Hello fellow Victorians..."
 
+**[Click here to invite to your server](https://discord.com/oauth2/authorize?client_id=754900762001277088&scope=bot&permissions=67423296)**
+
 ## Commands
 
 ### `!da`

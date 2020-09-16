@@ -75,9 +75,9 @@ function update_data(callback = null) {
 				client.covid_data = output;
 
 				console.log('Fetching graph');
-				const browser = await puppeteer.launch({'args': ['--no-sandbox', '--disable-setuid-sandbox']});
+				const browser = await puppeteer.launch(config.browser_settings);
 				const page = await browser.newPage();
-				await page.goto(GRAPH_URL);
+				await page.goto(GRAPH_URL, {waitUntil: 'load', timeout: 0});
 				await page.waitForSelector('#main-content');
 				const graphEl = await page.$('#main-content');
 				client.covid_graph = await graphEl.screenshot({type: 'png'});
@@ -97,6 +97,7 @@ function update_data(callback = null) {
 
 client.on('ready', () => {
 	console.log(`Logged in as ${client.user.tag}!`);
+	console.log(`Connected to ${client.guilds.cache.size} servers`);
 	client.user.setActivity('with my fellow Victorians');
 
 	update_data();
