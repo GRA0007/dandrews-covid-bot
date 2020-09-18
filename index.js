@@ -14,6 +14,7 @@ client.guild_channels = new Keyv('sqlite://guild_channels.sqlite');
 client.covid_data = null;
 client.covid_graph = null;
 client.last_fetched = null;
+client.browser = null;
 
 const DATA_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTwXSqlP56q78lZKxc092o6UuIyi7VqOIQj6RM4QmlVPgtJZfbgzv0a3X7wQQkhNu8MFolhVwMy4VnF/pub?gid=0&single=true&output=csv';
 const GRAPH_URL = 'https://public.tableau.com/views/Cases_15982342702770/DashboardPage?%3Aembed=y&%3AshowVizHome=no&%3Adisplay_count=y&%3Adisplay_static_image=y&%3AbootstrapWhenNotified=true&%3Alanguage=en&:embed=y&:showVizHome=n&:apiID=host2#navType=0&navSrc=Parse';
@@ -66,23 +67,28 @@ async function broadcast(guild, embed) {
 
 function update_data(callback = null) {
 	let now = new Date();
-	if (client.last_fetched == null || (now - client.last_fetched) > (2*60*60*1000)) { // More than 2 hours old
+	if (client.last_fetched == null || (now - client.last_fetched) > (30*60*1000)) { // More than 30 minutes old
 		client.last_fetched = now;
 		console.log('Fetching data');
 		fetch(DATA_URL).then(res => res.text()).then(csv => {
 			parse(csv, async (err, output) => {
-				console.log(JSON.stringify(output.shift(), null, 2));
+				let labels = output.shift();
+				console.log('Data fetched!');
 				client.covid_data = output;
 
 				console.log('Fetching graph');
-				const browser = await puppeteer.launch(config.browser_settings);
-				const page = await browser.newPage();
+				if (client.browser === null) {
+					console.log('Starting browser');
+					client.browser = await puppeteer.launch(config.browser_settings);
+					console.log('Browser ready!');
+				}
+				const page = await client.browser.newPage();
 				await page.goto(GRAPH_URL, {waitUntil: 'load', timeout: 0});
 				await page.waitForSelector('#main-content');
 				const graphEl = await page.$('#main-content');
 				client.covid_graph = await graphEl.screenshot({type: 'png'});
-				await browser.close();
-				console.log('Data fetch complete');
+				await page.close();
+				console.log('Data fetch complete!');
 
 				if (callback)
 					callback();
@@ -134,6 +140,7 @@ client.on('message', async message => {
 	if (message.author.bot) return;
 
 	if (message.content.startsWith('!da')) {
+		client.user.setActivity('with my fellow Victorians');
 		const args = message.content.replace('!da', '').trim().split(/ +/);
 		let command = '';
 		if (args.length > 0) {
@@ -148,10 +155,15 @@ client.on('message', async message => {
 				console.log('Failed to set channel as broadcast channel: ', e);
 				message.channel.send(`Failed to set <#${command}> as broadcast channel, please try again.`);
 			}
+		} else if (args.length == 0) {
+			message.channel.startTyping();
+			update_data(() => {
+				let embed = generate_embed();
+				message.channel.send('Hello fellow Victorians,', embed);
+				message.channel.stopTyping();
+			});
 		} else {
-			//message.channel.send("Use `!da [channel_id]` to set the broadcast channel.");
-			let embed = generate_embed();
-			message.channel.send('Hello fellow Victorians,', embed);
+			message.channel.send("Use `!da` to post the latest covid stats.\n\nUse `!da [channel_id]` to set the broadcast channel.\nE.g. `!da 123456789098765432`");
 		}
 	}
 });
