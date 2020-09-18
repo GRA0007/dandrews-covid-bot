@@ -155,7 +155,7 @@ client.on('message', async message => {
 				console.log('Failed to set channel as broadcast channel: ', e);
 				message.channel.send(`Failed to set <#${command}> as broadcast channel, please try again.`);
 			}
-		} else if (args.length == 0) {
+		} else if (args.length == 0 && command == '') {
 			message.channel.startTyping();
 			update_data(() => {
 				let embed = generate_embed();
