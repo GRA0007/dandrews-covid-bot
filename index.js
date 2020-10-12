@@ -14,7 +14,6 @@ client.guild_channels = new Keyv('sqlite://guild_channels.sqlite');
 client.covid_data = null;
 client.covid_graph = null;
 client.last_fetched = null;
-client.browser = null;
 
 const DATA_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTwXSqlP56q78lZKxc092o6UuIyi7VqOIQj6RM4QmlVPgtJZfbgzv0a3X7wQQkhNu8MFolhVwMy4VnF/pub?gid=0&single=true&output=csv';
 const GRAPH_URL = 'https://public.tableau.com/views/Cases_15982342702770/DashboardPage?%3Aembed=y&%3AshowVizHome=no&%3Adisplay_count=y&%3Adisplay_static_image=y&%3AbootstrapWhenNotified=true&%3Alanguage=en&:embed=y&:showVizHome=n&:apiID=host2#navType=0&navSrc=Parse';
@@ -36,7 +35,7 @@ function generate_embed() {
 	let embed = new Discord.MessageEmbed()
 		.setColor('#007780')
 		.setAuthor('DHHS', 'https://media-exp1.licdn.com/dms/image/C560BAQGt11zjLw8Slg/company-logo_200_200/0?e=2159024400&v=beta&t=GbAla80PMonJphpjnr7s-avj6Oo2-zTHAanmGJHplf4')
-		.setTitle('Lastest COVID data')
+		.setTitle('Latest COVID data')
 		.setURL('https://www.dhhs.vic.gov.au/victorian-coronavirus-covid-19-data')
 		.attachFiles([{
 			name: 'graph.png',
@@ -67,7 +66,7 @@ async function broadcast(guild, embed) {
 
 function update_data(callback = null) {
 	let now = new Date();
-	if (client.last_fetched == null || (now - client.last_fetched) > (30*60*1000)) { // More than 30 minutes old
+	if (client.last_fetched == null || (now - client.last_fetched) > (2*60*60*1000)) { // More than 2 hours old
 		client.last_fetched = now;
 		console.log('Fetching data');
 		fetch(DATA_URL).then(res => res.text()).then(csv => {
@@ -77,17 +76,15 @@ function update_data(callback = null) {
 				client.covid_data = output;
 
 				console.log('Fetching graph');
-				if (client.browser === null) {
-					console.log('Starting browser');
-					client.browser = await puppeteer.launch(config.browser_settings);
-					console.log('Browser ready!');
-				}
-				const page = await client.browser.newPage();
+				console.log('Starting browser');
+				const browser = await puppeteer.launch(config.browser_settings);
+				console.log('Browser ready!');
+				const page = await browser.newPage();
 				await page.goto(GRAPH_URL, {waitUntil: 'load', timeout: 0});
 				await page.waitForSelector('#main-content');
 				const graphEl = await page.$('#main-content');
 				client.covid_graph = await graphEl.screenshot({type: 'png'});
-				await page.close();
+				await browser.close();
 				console.log('Data fetch complete!');
 
 				if (callback)
